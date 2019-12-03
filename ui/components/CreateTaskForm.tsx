@@ -1,17 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface Props {
 
 }
 
+interface FormState {
+  title: string;
+}
+
+const defaultState: FormState = {
+  title: ''
+}
+
 const CreateTaskForm: React.FunctionComponent<Props> = () => {
+  const [formState, setFormState] = useState<FormState>(defaultState);
+  
+  const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target;
+    setFormState({
+      title: value
+    })
+  }
+  
   return (
     <form>
       <input 
         type="text" 
         name="title" 
         placeholder="What would you like to get done?"
-        autoComplete="off" 
+        autoComplete="off"
+        value={formState.title}
+        onChange={onChange}
       />
       <style jsx>{`
         form {

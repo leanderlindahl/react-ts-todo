@@ -1,6 +1,9 @@
 import React from 'react';
 import { NextPage } from 'next';
 import { TasksComponent, TaskStatus } from '../generated/graphql';
+import { Layout } from '../components/Layout';
+import { TaskList } from '../components/TaskList';
+import CreateTaskForm from '../components/CreateTaskForm';
 
 interface InitialProps {
   greeting: string;
@@ -9,7 +12,7 @@ interface InitialProps {
 interface Props extends InitialProps {}
 
 const IndexPage: NextPage<Props, InitialProps> = (props) => {
-  return <TasksComponent variables={{status: TaskStatus.Active}}>{({loading, error, data}) => {
+  return <Layout><TasksComponent variables={{status: TaskStatus.Active}}>{({loading, error, data}) => {
     if (loading) {
       return <p>Loading.</p>
     } else if (error) {
@@ -17,13 +20,12 @@ const IndexPage: NextPage<Props, InitialProps> = (props) => {
     }
     const tasks = data && data.tasks ? data.tasks : [];
     return (
-      <ul>{
-        tasks.map(task => {
-          return <li key={task.id}>{task.title}</li>
-        })}
-      </ul>
+      <>
+        <CreateTaskForm />
+        <TaskList tasks={tasks} />
+      </>
     );
-  }}</TasksComponent>
+  }}</TasksComponent></Layout>
 }
 
 IndexPage.getInitialProps = async () => ({
