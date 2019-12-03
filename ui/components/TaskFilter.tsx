@@ -1,23 +1,43 @@
-import React from "react";
-import Link from "next/link";
-import { TaskStatus } from "../generated/graphql";
+import React from 'react';
+import Link from 'next/link';
+import { TaskStatus } from '../generated/graphql';
 
-const TaskFilter: React.FunctionComponent = () => {
+export interface ITaskFilter {
+  status?: TaskStatus;
+}
+
+interface Props {
+  filter?: ITaskFilter;
+}
+
+const TaskFilter: React.FunctionComponent<Props> = ({ filter }) => {
   return (
     <ul>
       <li>
         <Link href="/">
-          <a>All</a>
+          <a className={!filter.status ? 'active' : undefined}>All</a>
         </Link>
       </li>
       <li>
-        <Link href={{ pathname: "/", query: { status: TaskStatus.Active } }}>
-          <a>Active</a>
+        <Link href={{ pathname: '/', query: { status: TaskStatus.Active } }}>
+          <a
+            className={
+              filter.status === TaskStatus.Active ? 'active' : undefined
+            }
+          >
+            Active
+          </a>
         </Link>
       </li>
       <li>
-        <Link href={{ pathname: "/", query: { status: TaskStatus.Completed } }}>
-          <a>Completed</a>
+        <Link href={{ pathname: '/', query: { status: TaskStatus.Completed } }}>
+          <a
+            className={
+              filter.status === TaskStatus.Completed ? 'active' : undefined
+            }
+          >
+            Completed
+          </a>
         </Link>
       </li>
       <style jsx>{`

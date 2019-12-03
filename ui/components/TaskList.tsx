@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Task,
   withDeleteTask,
@@ -9,9 +9,10 @@ import {
   TaskStatus,
   withChangeStatus,
   ChangeStatusMutationFn
-} from "../generated/graphql";
-import Link from "next/link";
-import { isApolloError } from "apollo-boost";
+} from '../generated/graphql';
+import Link from 'next/link';
+import { isApolloError } from 'apollo-boost';
+import { ITaskFilter } from './TaskFilter';
 
 interface MutationProps {
   deleteTask?: DeleteTaskMutationFn;
@@ -19,6 +20,7 @@ interface MutationProps {
 }
 interface ExposedProps {
   tasks: Task[];
+  filter: ITaskFilter;
 }
 
 type AllProps = MutationProps & ExposedProps;
@@ -26,7 +28,8 @@ type AllProps = MutationProps & ExposedProps;
 export const TaskList: React.FunctionComponent<AllProps> = ({
   tasks,
   deleteTask,
-  changeStatus
+  changeStatus,
+  filter
 }) => {
   const deleteTaskById = async (id: number) => {
     if (deleteTask) {
@@ -40,12 +43,12 @@ export const TaskList: React.FunctionComponent<AllProps> = ({
                 TasksQueryVariables
               >({
                 query: TasksDocument,
-                variables: { status: TaskStatus.Active }
+                variables: filter
               });
               if (tasksCache) {
                 cache.writeQuery<TasksQuery, TasksQueryVariables>({
                   query: TasksDocument,
-                  variables: { status: TaskStatus.Active },
+                  variables: filter,
                   data: {
                     tasks: tasksCache.tasks.filter(task => task.id !== id)
                   }
@@ -56,9 +59,9 @@ export const TaskList: React.FunctionComponent<AllProps> = ({
         });
       } catch (error) {
         if (isApolloError(error) && error.networkError) {
-          alert("A network error occurred.");
+          alert('A network error occurred.');
         } else {
-          alert("An error occurred. Please try again.");
+          alert('An error occurred. Please try again.');
         }
       }
     }
@@ -66,7 +69,28 @@ export const TaskList: React.FunctionComponent<AllProps> = ({
   const changeTaskStatusById = async (id: number, status: TaskStatus) => {
     if (changeStatus) {
       await changeStatus({
-        variables: { id, status }
+        variables: { id, status },
+        update: (cache, result) => {
+          if (filter.status && result.data && result.data.changeStatus) {
+            const tasksCache = cache.readQuery<TasksQuery, TasksQueryVariables>(
+              {
+                query: TasksDocument,
+                variables: filter
+              }
+            );
+            if (tasksCache) {
+              cache.writeQuery<TasksQuery, TasksQueryVariables>({
+                query: TasksDocument,
+                variables: filter,
+                data: {
+                  tasks: tasksCache.tasks.filter(
+                    task => task.status === filter.status
+                  )
+                }
+              });
+            }
+          }
+        }
       });
     }
   };
@@ -89,7 +113,7 @@ export const TaskList: React.FunctionComponent<AllProps> = ({
               <span></span>
             </label>
             <div className="title">
-              <Link href={{ pathname: "/update", query: { id: task.id } }}>
+              <Link href={{ pathname: '/update', query: { id: task.id } }}>
                 <a>{task.title}</a>
               </Link>
             </div>
@@ -174,7 +198,7 @@ export const TaskList: React.FunctionComponent<AllProps> = ({
         .checkbox span:before {
           border: solid #7694f5;
           border-width: 0 3px 3px 0;
-          content: "";
+          content: '';
           display: block;
           height: 12px;
           opacity: 0;

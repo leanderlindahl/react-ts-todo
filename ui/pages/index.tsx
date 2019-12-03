@@ -1,13 +1,13 @@
-import React from "react";
-import { NextPage } from "next";
-import { TasksComponent, TaskStatus } from "../generated/graphql";
-import { Layout } from "../components/Layout";
-import TaskList from "../components/TaskList";
-import CreateTaskForm from "../components/CreateTaskForm";
-import TaskFilter from "../components/TaskFilter";
+import React from 'react';
+import { NextPage } from 'next';
+import { TasksComponent, TaskStatus } from '../generated/graphql';
+import { Layout } from '../components/Layout';
+import TaskList from '../components/TaskList';
+import CreateTaskForm from '../components/CreateTaskForm';
+import TaskFilter, { ITaskFilter } from '../components/TaskFilter';
 
 interface InitialProps {
-  greeting: string;
+  filter: ITaskFilter;
 }
 
 interface Props extends InitialProps {}
@@ -15,9 +15,9 @@ interface Props extends InitialProps {}
 const IndexPage: NextPage<Props, InitialProps> = props => {
   return (
     <Layout>
-      <TasksComponent variables={{ status: TaskStatus.Active }}>
+      <TasksComponent variables={props.filter} fetchPolicy="cache-and-network">
         {({ loading, error, data, refetch }) => {
-          if (loading) {
+          if (loading && (!data || !data.tasks)) {
             return <p>Loading.</p>;
           } else if (error) {
             return <p>An error occured. {console.log(error)}</p>;
@@ -26,18 +26,23 @@ const IndexPage: NextPage<Props, InitialProps> = props => {
           return (
             <>
               <CreateTaskForm onTaskCreated={refetch} />
-              <TaskList tasks={tasks} />
+              <TaskList tasks={tasks} filter={props.filter} />
             </>
           );
         }}
       </TasksComponent>
-      <TaskFilter></TaskFilter>
+      <TaskFilter filter={props.filter} />
     </Layout>
   );
 };
 
-IndexPage.getInitialProps = async () => ({
-  greeting: "Hello World!"
+IndexPage.getInitialProps = async ctx => ({
+  filter: {
+    status:
+      typeof ctx.query.status === 'string'
+        ? (ctx.query.status as TaskStatus)
+        : undefined
+  }
 });
 
 export default IndexPage;
