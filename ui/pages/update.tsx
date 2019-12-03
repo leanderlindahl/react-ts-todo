@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layout } from '../components/Layout';
 import { NextPage } from 'next';
+import { TaskComponent } from '../generated/graphql';
 
 interface InitialProps {
   id: number;
@@ -10,7 +11,28 @@ interface AllProps extends InitialProps {
 
 }
 const UpdatePage: NextPage<AllProps, InitialProps> = ({ id }) => {
-  return <Layout>Update Page {id}</Layout>
+return (
+  <Layout>
+    { id ? (
+      <TaskComponent variables={{id}}>
+        {({loading, error, data}) => {
+          if(loading) {
+            return <p>Loading.</p>
+          } else if (error) {
+            return <p>An error occured</p>
+          }
+          const task = data && data.task ? data.task : null; 
+          return task ? (
+            <div>{task.title}</div>
+          ) : (
+            <p>Could not find the task.</p>
+          );
+         }}
+      </TaskComponent>
+    ) : (
+      <p>Invalid id.</p>
+    )}
+  </Layout>)
 }
 
 UpdatePage.getInitialProps = async ctx => {
