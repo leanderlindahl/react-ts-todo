@@ -1,10 +1,21 @@
-import React from 'react';
-import { Task, withDeleteTask, DeleteTaskMutationFn, TasksQuery, TasksQueryVariables, TasksDocument, TaskStatus } from '../generated/graphql';
-import Link from 'next/link';
-import { isApolloError } from 'apollo-boost';
+import React from "react";
+import {
+  Task,
+  withDeleteTask,
+  DeleteTaskMutationFn,
+  TasksQuery,
+  TasksQueryVariables,
+  TasksDocument,
+  TaskStatus,
+  withChangeStatus,
+  ChangeStatusMutationFn
+} from "../generated/graphql";
+import Link from "next/link";
+import { isApolloError } from "apollo-boost";
 
 interface MutationProps {
   deleteTask?: DeleteTaskMutationFn;
+  changeStatus?: ChangeStatusMutationFn;
 }
 interface ExposedProps {
   tasks: Task[];
@@ -12,7 +23,11 @@ interface ExposedProps {
 
 type AllProps = MutationProps & ExposedProps;
 
-export const TaskList: React.FunctionComponent<AllProps> = ({tasks, deleteTask}) => {
+export const TaskList: React.FunctionComponent<AllProps> = ({
+  tasks,
+  deleteTask,
+  changeStatus
+}) => {
   const deleteTaskById = async (id: number) => {
     if (deleteTask) {
       try {
@@ -20,44 +35,74 @@ export const TaskList: React.FunctionComponent<AllProps> = ({tasks, deleteTask})
           variables: { id },
           update: (cache, result) => {
             if (result.data && result.data.deleteTask) {
-              const tasksCache = cache.readQuery<TasksQuery, TasksQueryVariables>({
+              const tasksCache = cache.readQuery<
+                TasksQuery,
+                TasksQueryVariables
+              >({
                 query: TasksDocument,
-                variables: { status: TaskStatus.Active}
+                variables: { status: TaskStatus.Active }
               });
               if (tasksCache) {
                 cache.writeQuery<TasksQuery, TasksQueryVariables>({
                   query: TasksDocument,
                   variables: { status: TaskStatus.Active },
                   data: {
-                    tasks: tasksCache.tasks.filter(task => task.id !== id )
+                    tasks: tasksCache.tasks.filter(task => task.id !== id)
                   }
-                })
+                });
               }
             }
           }
         });
       } catch (error) {
-        if(isApolloError(error) && error.networkError) {
-          alert('A network error occurred.')
+        if (isApolloError(error) && error.networkError) {
+          alert("A network error occurred.");
         } else {
-          alert('An error occurred. Please try again.');
+          alert("An error occurred. Please try again.");
         }
       }
     }
-  }
+  };
+  const changeTaskStatusById = async (id: number, status: TaskStatus) => {
+    if (changeStatus) {
+      await changeStatus({
+        variables: { id, status }
+      });
+    }
+  };
   return (
-    <ul>{
-      tasks.map(task => {
+    <ul>
+      {tasks.map(task => {
         return (
           <li key={task.id}>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={task.status === TaskStatus.Completed}
+                onChange={event => {
+                  const newStatus = event.target.checked
+                    ? TaskStatus.Completed
+                    : TaskStatus.Active;
+                  changeTaskStatusById(task.id, newStatus);
+                }}
+              />
+              <span></span>
+            </label>
             <div className="title">
-              <Link href={{pathname: '/update', query: { id: task.id} }}>
+              <Link href={{ pathname: "/update", query: { id: task.id } }}>
                 <a>{task.title}</a>
               </Link>
             </div>
-            <button onClick={() => { deleteTaskById(task.id) }} className="deleteButton">&times;</button>
+            <button
+              onClick={() => {
+                deleteTaskById(task.id);
+              }}
+              className="deleteButton"
+            >
+              &times;
+            </button>
           </li>
-        )
+        );
       })}
       <style jsx>{`
         ul {
@@ -108,11 +153,49 @@ export const TaskList: React.FunctionComponent<AllProps> = ({tasks, deleteTask})
           background: #7694f5;
           color: white;
         }
+        .checkbox {
+          cursor: pointer;
+        }
+        .checkbox input {
+          cursor: pointer;
+          opacity: 0;
+          pointer-events: none;
+          position: absolute;
+        }
+        .checkbox span {
+          align-items: center;
+          border: 2px solid #7694f5;
+          border-radius: 50%;
+          display: flex;
+          justify-content: center;
+          height: 30px;
+          width: 30px;
+        }
+        .checkbox span:before {
+          border: solid #7694f5;
+          border-width: 0 3px 3px 0;
+          content: "";
+          display: block;
+          height: 12px;
+          opacity: 0;
+          transform: rotate(45deg);
+          width: 7px;
+        }
+        .checkbox input:checked + span:before {
+          opacity: 1;
+        }
+        .checkbox span:hover {
+          box-shadow: inset 0 0 0 2px #dde5ff;
+        }
       `}</style>
     </ul>
   );
-}
+};
 
-export default withDeleteTask<ExposedProps, MutationProps>({
-  props: ({ mutate }) => ({ deleteTask: mutate })
-})(TaskList);
+export default withChangeStatus<ExposedProps, MutationProps>({
+  props: ({ mutate }) => ({ changeStatus: mutate })
+})(
+  withDeleteTask<ExposedProps, MutationProps>({
+    props: ({ mutate }) => ({ deleteTask: mutate })
+  })(TaskList)
+);
