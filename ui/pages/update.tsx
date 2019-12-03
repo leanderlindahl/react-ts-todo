@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout } from '../components/Layout';
 import { NextPage } from 'next';
 import { TaskComponent } from '../generated/graphql';
+import UpdateTaskForm from '../components/UpdateTaskForm';
 
 interface InitialProps {
   id: number;
@@ -23,7 +24,10 @@ return (
           }
           const task = data && data.task ? data.task : null; 
           return task ? (
-            <div>{task.title}</div>
+            <UpdateTaskForm initialInput={{
+              id: task.id,
+              title: task.title
+            }}></UpdateTaskForm>
           ) : (
             <p>Could not find the task.</p>
           );
